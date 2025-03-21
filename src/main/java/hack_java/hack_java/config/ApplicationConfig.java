@@ -28,6 +28,29 @@ public class ApplicationConfig {
 
     }
 
+    @Data
+    @ConfigurationProperties(prefix = "gupshup.account")
+    @Component
+    public static class GupShupConfig {
+
+        private String userId;
+
+        private String userPassword;
+
+        private String url;
+    }
+
+    @Data
+    @ConfigurationProperties(prefix = "pwd")
+    @Component
+    public static class PwdConfig {
+
+        private String toNumber;
+
+        private String nhsiToNumber;
+
+    }
+
     @Bean
     public RestClient getRestClient(){
         return RestClient.builder().build();
