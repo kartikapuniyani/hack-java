@@ -1,0 +1,2 @@
+# hack-java
+java application
