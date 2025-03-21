@@ -52,10 +52,10 @@ public class PotholeDetectionService {
         // Step 1: Analyze sensor data to confirm if this is likely a pothole
         boolean isPotholeBySensorData = analyzeAccelGyroData(request.getAccelValues(), request.getGyroValues());
 
-        if (!isPotholeBySensorData) {
-            logger.info("Sensor data doesn't indicate a pothole. Likely false positive.");
-            return new PotholeVerificationResult(false, false, "Sensor data insufficient for pothole classification");
-        }
+//        if (!isPotholeBySensorData) {
+//            logger.info("Sensor data doesn't indicate a pothole. Likely false positive.");
+//            return new PotholeVerificationResult(false, false, "Sensor data insufficient for pothole classification");
+//        }
 
         // Step 2: Check historical data to see if this pothole has been reported before
         List<Map<String, Object>> previousReports = elasticsearchRepository.findNearbyPotholes(
