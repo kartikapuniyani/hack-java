@@ -31,23 +31,23 @@ public class ElasticsearchIndexSetup {
      * Initialize the Elasticsearch index with proper mappings
      * This runs after the application is fully started
      */
-    @EventListener(ApplicationReadyEvent.class)
-    public void setupElasticsearchIndex() {
-        try {
-            // Check if index already exists
-            boolean indexExists = elasticsearchClient.indices()
-                    .exists(new GetIndexRequest(potholeIndex), RequestOptions.DEFAULT);
-
-            if (!indexExists) {
-                logger.info("Creating pothole index with geo mapping...");
-                createPotholeIndex();
-            } else {
-                logger.info("Pothole index already exists");
-            }
-        } catch (IOException e) {
-            logger.error("Error checking or creating Elasticsearch index", e);
-        }
-    }
+//    @EventListener(ApplicationReadyEvent.class)
+//    public void setupElasticsearchIndex() {
+//        try {
+//            // Check if index already exists
+//            boolean indexExists = elasticsearchClient.indices()
+//                    .exists(new GetIndexRequest(potholeIndex), RequestOptions.DEFAULT);
+//
+//            if (!indexExists) {
+//                logger.info("Creating pothole index with geo mapping...");
+//                createPotholeIndex();
+//            } else {
+//                logger.info("Pothole index already exists");
+//            }
+//        } catch (IOException e) {
+//            logger.error("Error checking or creating Elasticsearch index", e);
+//        }
+//    }
 
     /**
      * Create the pothole index with proper mappings

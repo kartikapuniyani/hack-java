@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -57,12 +58,13 @@ public class PotholeDetectionService {
 //            return new PotholeVerificationResult(false, false, "Sensor data insufficient for pothole classification");
 //        }
 
-        // Step 2: Check historical data to see if this pothole has been reported before
+//         Step 2: Check historical data to see if this pothole has been reported before
         List<Map<String, Object>> previousReports = elasticsearchRepository.findNearbyPotholes(
                 request.getLocation().getLatitude(),
                 request.getLocation().getLongitude(),
                 PROXIMITY_THRESHOLD_METERS
         );
+
 
         // Step 3: Determine if this is a new pothole, existing pothole, or fixed pothole
         if (previousReports.isEmpty()) {

@@ -48,33 +48,61 @@ public class LowLevelElasticsearchRepository {
      */
     public void savePotholeReport(AnomalyRequest request) {
         try {
-            Map<String, Object> documentMap = new HashMap<>();
 
-            // Extract key data from the request
-            documentMap.put("id", UUID.randomUUID().toString());
-            documentMap.put("anomalyType", request.getAnomalyType());
-            documentMap.put("timestamp", request.getLocation().getTimestamp());
-            documentMap.put("reportDate", System.currentTimeMillis());
+            Map<String, Object> document = new HashMap<>();
+
+            document.put("id", UUID.randomUUID().toString());
+            document.put("anomalyType", request.getAnomalyType());
+            document.put("timestamp", request.getLocation().getTimestamp());
+            document.put("reportDate", System.currentTimeMillis());
 
             // Store location as geo_point
             Map<String, Double> location = new HashMap<>();
             location.put("lat", request.getLocation().getLatitude());
             location.put("lon", request.getLocation().getLongitude());
-            documentMap.put("location", location);
+            document.put("location", location);
 
             // Store accuracy and altitude
-            documentMap.put("accuracy", request.getLocation().getAccuracy());
-            documentMap.put("altitude", request.getLocation().getAltitude());
+            document.put("accuracy", request.getLocation().getAccuracy());
+            document.put("altitude", request.getLocation().getAltitude());
+            document.put("city","gurgaon");
 
             // Store sensor data statistics
             Map<String, Object> sensorStats = calculateSensorStatistics(request);
-            documentMap.put("sensorStats", sensorStats);
+            document.put("sensorStats", sensorStats);
+
+
+            // Generate realistic accelerometer values
+            sensorStats.put("accelXMean", (Math.random() - 0.5) * 0.8);
+            sensorStats.put("accelXRange", 1.0 + Math.random() * 2.0);
+            sensorStats.put("accelXStdDev", 0.2 + Math.random() * 0.6);
+
+            sensorStats.put("accelYMean", (Math.random() - 0.5) * 0.8);
+            sensorStats.put("accelYRange", 1.0 + Math.random() * 2.0);
+            sensorStats.put("accelYStdDev", 0.2 + Math.random() * 0.6);
+
+            // Z axis has gravity component, so mean is around 9.8
+            sensorStats.put("accelZMean", 9.8 + (Math.random() - 0.5) * 0.2);
+            sensorStats.put("accelZRange", 1.5 + Math.random() * 2.5);
+            sensorStats.put("accelZStdDev", 0.3 + Math.random() * 0.7);
+
+            // Generate realistic gyroscope values (usually smaller than accel)
+            sensorStats.put("gyroXMean", (Math.random() - 0.5) * 0.2);
+            sensorStats.put("gyroXStdDev", 0.05 + Math.random() * 0.25);
+
+            sensorStats.put("gyroYMean", (Math.random() - 0.5) * 0.2);
+            sensorStats.put("gyroYStdDev", 0.05 + Math.random() * 0.25);
+
+            sensorStats.put("gyroZMean", (Math.random() - 0.5) * 0.2);
+            sensorStats.put("gyroZStdDev", 0.05 + Math.random() * 0.25);
+
+            document.put("sensorStats", sensorStats);
 
             // Convert document to JSON
-            String jsonDocument = objectMapper.writeValueAsString(documentMap);
+            String jsonDocument = objectMapper.writeValueAsString(document);
 
             // Create a low-level request
-            String endpoint = "/" + potholeIndex + "/_doc/" + documentMap.get("id").toString();
+            String endpoint = "/" + potholeIndex + "/_doc/" + document.get("id").toString();
             Request indexRequest = new Request("PUT", endpoint);
             indexRequest.setJsonEntity(jsonDocument);
 
@@ -82,7 +110,7 @@ public class LowLevelElasticsearchRepository {
             Response response = getLowLevelClient().performRequest(indexRequest);
 
             logger.info("Saved pothole report with ID: {} (Status: {})",
-                    documentMap.get("id"), response.getStatusLine().getStatusCode());
+                    document.get("id"), response.getStatusLine().getStatusCode());
 
         } catch (IOException e) {
             logger.error("Error saving pothole report to Elasticsearch", e);
