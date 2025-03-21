@@ -11,4 +11,5 @@ public class PotholeVerificationResult {
     private boolean isPothole;
     private boolean isConfirmed;
     private String message;
+    private String signedUrl;
 }

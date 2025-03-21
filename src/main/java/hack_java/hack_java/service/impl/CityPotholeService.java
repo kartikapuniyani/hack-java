@@ -35,6 +35,9 @@ public class CityPotholeService {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private SignedUrlService signedUrlService;
+
     /**
      * Get all potholes for a specific city
      *
@@ -78,7 +81,14 @@ public class CityPotholeService {
             // Extract source data
             List<Map<String, Object>> results = new ArrayList<>();
             for (Map<String, Object> hit : hitsList) {
-                results.add((Map<String, Object>) hit.get("_source"));
+                Map<String, Object> source = (Map<String, Object>) hit.get("_source");
+                if (source.containsKey("fileName")) {
+                    // Extract fileName from videoUrl if present
+                    String fileName = (String) source.get("fileName");
+                    String url = signedUrlService.generateSignedUrl("test-hack24", fileName,60);
+                    source.put("signedUrl", url);
+                }
+                results.add(source);
             }
 
             return results;
