@@ -51,6 +51,30 @@ public class ApplicationConfig {
 
     }
 
+    @Data
+    @ConfigurationProperties(prefix = "pothole.detection")
+    @Component
+    public static class DetectionConfig {
+
+        private double accelThreshold;
+
+        private double accelVarianceThreshold;
+
+        private double gyroVarianceThreshold;
+    }
+
+    @Data
+    @ConfigurationProperties(prefix = "pothole.verification")
+    @Component
+    public static class VerificationConfig {
+
+        private int minimumReports;
+
+        private double proximityMeters;
+
+        private int repairTimeDays;
+    }
+
     @Bean
     public RestClient getRestClient(){
         return RestClient.builder().build();

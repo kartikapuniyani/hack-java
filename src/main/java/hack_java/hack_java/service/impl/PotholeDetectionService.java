@@ -1,20 +1,14 @@
 package hack_java.hack_java.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import hack_java.hack_java.entity.AccelValue;
+import hack_java.hack_java.config.ApplicationConfig;
 import hack_java.hack_java.entity.AnomalyRequest;
-import hack_java.hack_java.entity.GyroValue;
 import hack_java.hack_java.entity.PotholeVerificationResult;
 import hack_java.hack_java.repository.LowLevelElasticsearchRepository;
-import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.xcontent.XContentType;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -22,35 +16,19 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@AllArgsConstructor
 public class PotholeDetectionService {
 
     private static final Logger logger = LoggerFactory.getLogger(PotholeDetectionService.class);
 
-    @Value("${pothole.detection.accel-threshold:4.0}")
-    private double ACCEL_Z_THRESHOLD;
+    private ApplicationConfig.VerificationConfig verificationConfig;
 
-    @Value("${pothole.detection.accel-variance-threshold:2.5}")
-    private double ACCEL_VARIANCE_THRESHOLD;
+    private ApplicationConfig.DetectionConfig detectionConfig;
 
-    @Value("${pothole.detection.gyro-variance-threshold:0.05}")
-    private double GYRO_VARIANCE_THRESHOLD;
-
-    @Value("${pothole.verification.minimum-reports:2}")
-    private int MINIMUM_REPORTS_FOR_CONFIRMATION;
-
-    @Value("${pothole.verification.proximity-meters:10.0}")
-    private double PROXIMITY_THRESHOLD_METERS;
-
-    @Value("${pothole.verification.repair-time-days:30}")
-    private int REPAIR_TIME_THRESHOLD_DAYS;
-
-    @Autowired
     private LowLevelElasticsearchRepository elasticsearchRepository;
 
-    @Autowired
     private SignedUrlService signedUrlService;
 
-    @Autowired
     private NotificationServiceImpl notificationService;
 
     /**
@@ -66,7 +44,7 @@ public class PotholeDetectionService {
         List<Map<String, Object>> previousReports = elasticsearchRepository.findNearbyPotholes(
                 request.getLocation().getLatitude(),
                 request.getLocation().getLongitude(),
-                PROXIMITY_THRESHOLD_METERS
+                verificationConfig.getProximityMeters()
         );
 
         String url = signedUrlService.generateSignedUrl("test-hack24", request.getFileName(),10);
@@ -78,7 +56,7 @@ public class PotholeDetectionService {
             return new PotholeVerificationResult(true, false, "First report of pothole at this location",url);
         } else {
             // Check if this pothole has been reported multiple times (verification)
-            boolean isConfirmed = previousReports.size() >= MINIMUM_REPORTS_FOR_CONFIRMATION;
+            boolean isConfirmed = previousReports.size() >= verificationConfig.getMinimumReports();
 
             // Check if reports stopped for a while and now started again (not fixed)
             long currentTime = request.getLocation().getTimestamp();
@@ -116,7 +94,7 @@ public class PotholeDetectionService {
             long daysSinceLastReport = (currentTime - mostRecentReportTime) / (24 * 60 * 60 * 1000);
 
             // If no reports for longer than threshold, may have been fixed
-            return daysSinceLastReport > REPAIR_TIME_THRESHOLD_DAYS;
+            return daysSinceLastReport > verificationConfig.getRepairTimeDays();
         }
 
         return false;
