@@ -57,6 +57,7 @@ public class LowLevelElasticsearchRepository {
             document.put("anomalyType", request.getAnomalyType());
             document.put("timestamp", request.getLocation().getTimestamp());
             document.put("reportDate", System.currentTimeMillis());
+            document.put("notifyDate", null);
 
             // Store location as geo_point
             Map<String, Double> location = new HashMap<>();
@@ -388,17 +389,6 @@ public class LowLevelElasticsearchRepository {
                 results.add(hit.path("_source"));
             }
             return results;
-            // Extract hits
-//            Map<String, Object> hits = (Map<String, Object>) responseMap.get("hits");
-//            List<Map<String, Object>> hitsList = (List<Map<String, Object>>) hits.get("hits");
-
-//            // Process results
-//            List<Map<String, Object>> results = new ArrayList<>();
-//            for (Map<String, Object> hit : hitsList) {
-//                results.add((Map<String, Object>) hit.get("_source"));
-//            }
-//            return results;
-
         } catch (IOException e) {
             logger.error("Error while getting potholes", e);
             throw new RuntimeException("Failed to get potholes", e);
@@ -458,17 +448,6 @@ public class LowLevelElasticsearchRepository {
             }
             return results;
 
-            // Extract hits
-//            Map<String, Object> hits = (Map<String, Object>) responseMap.get("hits");
-//            List<Map<String, Object>> hitsList = (List<Map<String, Object>>) hits.get("hits");
-
-            // Process results
-//            List<Map<String, Object>> results = new ArrayList<>();
-//            for (Map<String, Object> hit : hitsList) {
-//                results.add((Map<String, Object>) hit.get("_source"));
-//            }
-//            return results;
-
         } catch (IOException e) {
             logger.error("Error while getting potholes", e);
             throw new RuntimeException("Failed to get potholes", e);
@@ -491,9 +470,10 @@ public class LowLevelElasticsearchRepository {
                     "    }\n" +
                     "  },\n" +
                     "  \"script\": {\n" +
-                    "    \"source\": \"ctx._source.reportDate = params.new_date\",\n" +
+                    "    \"source\": \"ctx._source.reportDate = params.new_date; ctx._source.notifyDate = params.notify_date;\",\n" +
                     "    \"params\": {\n" +
-                    "      \"new_date\": " + timestamp + "\n" +
+                    "      \"new_date\": " + timestamp + ",\n" +
+                    "      \"notify_date\": " + timestamp + "\n" +
                     "    }\n" +
                     "  }\n" +
                     "}";
