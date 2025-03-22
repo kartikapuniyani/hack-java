@@ -143,7 +143,7 @@ public class PotholeDetectionService {
         elasticsearchRepository.update(timestamp, ids);
     }
 
-    @Scheduled(cron = "0 */10 * * * *")
+    @Scheduled(cron = "0 */60 * * * *")
     public void getAndUpdate() throws IOException {
          long currentTime = System.currentTimeMillis();
         long calculatedTime = currentTime - (30L * 24 * 60 * 60 * 1000);
