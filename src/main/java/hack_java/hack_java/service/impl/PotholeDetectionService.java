@@ -1,7 +1,9 @@
 package hack_java.hack_java.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.api.client.json.Json;
 import hack_java.hack_java.config.ApplicationConfig;
+import hack_java.hack_java.dto.VoiceBotDto;
 import hack_java.hack_java.entity.AnomalyRequest;
 import hack_java.hack_java.entity.PotholeVerificationResult;
 import hack_java.hack_java.repository.LowLevelElasticsearchRepository;
@@ -108,30 +110,34 @@ public class PotholeDetectionService {
             List<JsonNode> delhiData = new ArrayList<>();
             List<JsonNode> gurgaonData = new ArrayList<>();
             List<JsonNode> noidaData = new ArrayList<>();
+            List<JsonNode> mumbaiData = new ArrayList<>();
             List<String> ids = new ArrayList<>();
 
             for (JsonNode data : dataList) {
                 if ("delhi".equalsIgnoreCase(data.get("city").asText())) {
                     delhiData.add(data);
-                } else if ("gurgaon".equalsIgnoreCase(data.get("city").asText())) {
+                }else if("mumbai".equalsIgnoreCase(data.get("city").asText())){
+                    mumbaiData.add(data);
+                }
+                else if ("gurgaon".equalsIgnoreCase(data.get("city").asText())) {
                     gurgaonData.add(data);
                 } else if ("noida".equalsIgnoreCase(data.get("city").asText())) {
                     noidaData.add(data);
                 }
             }
             for (JsonNode delhi : delhiData) {
-                notificationService.sendSms("SAS tower");
-                //notificationService.sendSms(delhi.get("address").asText());
+                notificationService.sendWhatsAppSms("SAS tower");
                 ids.add(delhi.get("id").asText());
             }
             for (JsonNode noida : noidaData) {
-                //notificationService.sendWhatsAppSms(noida.get("address").asText());
                 notificationService.sendWhatsAppSms("SAS tower");
                 ids.add(noida.get("id").asText());
             }
+            for(JsonNode mumbai : mumbaiData){
+                notificationService.sendCAllByVoiceBot(new VoiceBotDto(mumbai.get("lat").asDouble(), mumbai.get("lon").asDouble()));
+                ids.add(mumbai.get("id").asText());
+            }
             for (JsonNode gurgaon : gurgaonData) {
-                notificationService.sendSms("SAS tower");
-                //notificationService.sendSms(gurgaon.get("address").asText());
                 ids.add(gurgaon.get("id").asText());
             }
             updateNotifyStatus(ids);
@@ -162,4 +168,8 @@ public class PotholeDetectionService {
         }
         processAndNotify(finalList);
     }
+
+
+
+
 }

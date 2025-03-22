@@ -1,6 +1,12 @@
 package hack_java.hack_java.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.client.json.Json;
 import hack_java.hack_java.config.ApplicationConfig;
+import hack_java.hack_java.dto.VoiceBotDto;
 import hack_java.hack_java.dto.WhatsAppRequestDTO;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,19 +21,22 @@ import org.springframework.web.client.RestClient;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
 @AllArgsConstructor
 public class NotificationServiceImpl {
 
-    private RestClient restClient;
+    private final RestClient restClient;
 
-    private ApplicationConfig.TwilioConfig twilioConfig;
+    private final ApplicationConfig.TwilioConfig twilioConfig;
 
-    private ApplicationConfig.GupShupConfig gupShupConfig;
+    private final ApplicationConfig.GupShupConfig gupShupConfig;
 
-    private ApplicationConfig.PwdConfig config;
+    private final ApplicationConfig.PwdConfig config;
 
     public String sendSms(String address) {
         String url = String.format(twilioConfig.getSmsUrl(), twilioConfig.getAccountSid());
@@ -74,5 +83,43 @@ public class NotificationServiceImpl {
                 .body(formData)
                 .retrieve()
                 .body(String.class);
+    }
+
+    public String sendCAllByVoiceBot(VoiceBotDto voiceBotDto) throws JsonProcessingException {
+        // Construct the request body
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("eventName", "5xSdaLRgxb6uB6WA9wFL");
+        requestBody.put("phone", "8384051766");
+        Map<String,String> dynamicVariables = new HashMap<>();
+        dynamicVariables.put("incident","pot hole");
+        dynamicVariables.put("address", findAddress(voiceBotDto.getLongitude().toString(), voiceBotDto.getLatitude().toString()));
+        dynamicVariables.put("lat", voiceBotDto.getLatitude().toString());
+        dynamicVariables.put("long", voiceBotDto.getLongitude().toString());
+        dynamicVariables.put("dateNtime", "22 Mar, 2025 Saturday");
+        requestBody.put("dynamic_variables", dynamicVariables);
+
+        // Make the HTTP POST request
+        return restClient.post()
+                .uri("https://talk-track-flow.qac24svc.dev/api/v1/agent/event-record")
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .body(requestBody)
+                .retrieve()
+                .body(String.class);
+    }
+
+
+    public String findAddress(String longitude, String latitude) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        String response = restClient.get()
+                .uri("https://maps.googleapis.com/maps/api/geocode/json?latlng="+longitude+","+latitude+"&key=AIzaSyDUopwrv2x_aPeOuNo6f-aWswmpPnkn6NI")
+                .retrieve()
+                .body(String.class);
+
+        JsonNode jsonNode = objectMapper.readTree(response);
+        List<JsonNode> results = jsonNode.findValues("results");
+        JsonNode addressNode = results.get(0);
+        JsonNode address_component = addressNode.get(0);
+        String address = address_component.get("formatted_address").asText();
+        return address;
     }
 }
