@@ -14,4 +14,5 @@ public class AnomalyRequest {
     private List<AccelValue> accelValues;
     private List<GyroValue> gyroValues;
     private LocationData location;
+    private String fileName;
 }

@@ -66,6 +66,7 @@ public class LowLevelElasticsearchRepository {
             document.put("accuracy", request.getLocation().getAccuracy());
             document.put("altitude", request.getLocation().getAltitude());
             document.put("city","gurgaon");
+            document.put("fileName",request.getFileName());
 
             // Store sensor data statistics
             Map<String, Object> sensorStats = calculateSensorStatistics(request);
