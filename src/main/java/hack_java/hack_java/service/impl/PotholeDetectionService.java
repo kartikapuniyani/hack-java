@@ -145,20 +145,17 @@ public class PotholeDetectionService {
 
     @Scheduled(cron = "0 */10 * * * *")
     public void getAndUpdate() throws IOException {
-        log.info("executed in every 1 min");
-        long currentTime = System.currentTimeMillis();
+         long currentTime = System.currentTimeMillis();
         long calculatedTime = currentTime - (30L * 24 * 60 * 60 * 1000);
 
         List<JsonNode> finalList = new ArrayList<>();
 
         //get all the data past 30 days
         List<JsonNode> filteredData = elasticsearchRepository.getAll(calculatedTime);
-        log.info("get all the data on the basis of currentDate filteredData");
         for (JsonNode data : filteredData){
 
             //get the potholes within 50m distance
             List<JsonNode> nodes = elasticsearchRepository.getUpdatedList(data.get("location").get("lat").asDouble(), data.get("location").get("lon").asDouble(), calculatedTime);
-            log.info("filter the data on the basis of currentDate, latitude = {} and longitude = {} and nodes", data.get("location").get("lat").asDouble(), data.get("location").get("lon").asDouble());
             if(nodes.size() > 0) {
                 finalList.addAll(nodes);
             }

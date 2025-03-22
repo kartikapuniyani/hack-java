@@ -56,7 +56,6 @@ public class SignedUrlService {
                     TimeUnit.MINUTES,
                     Storage.SignUrlOption.withV4Signature() // Use V4 signing
             );
-            System.out.println(signedUrl);
             return signedUrl.toString();
         } catch (Exception e) {
             log.error("error in generateSignedUrl : {}",e.getMessage());
@@ -101,10 +100,8 @@ public class SignedUrlService {
                     Storage.SignUrlOption.httpMethod(HttpMethod.PUT),
                     Storage.SignUrlOption.withContentType() // Include content type in the signed URL
             );
-            System.out.println("dejhebwjhwbjhebfj "+  signedUrl);
             return signedUrl.toString();
         } catch (Exception e) {
-            System.out.println(e);
             log.error("error in generateSignedUrl : {}",e.getMessage());
             return "";
         }
