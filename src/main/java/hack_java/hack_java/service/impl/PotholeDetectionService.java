@@ -50,7 +50,7 @@ public class PotholeDetectionService {
                 verificationConfig.getProximityMeters()
         );
 
-        String url = signedUrlService.generateSignedUrl("test-hack24", request.getFileName(),10);
+        String url = signedUrlService.generatePreSignedUrl("test-hack24", request.getFileName(),10);
 
         // Step 2: Determine if this is a new pothole, existing pothole, or fixed pothole
         if (previousReports.isEmpty()) {
