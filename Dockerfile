@@ -7,5 +7,6 @@ COPY src src
 RUN chmod +x ./mvnw
 RUN ./mvnw install -DskipTests
 RUN mv target/*.jar app.jar
-EXPOSE 8084
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+ENV PORT=8080
+EXPOSE ${PORT}
+ENTRYPOINT ["sh", "-c", "java -Dserver.port=${PORT} -jar /app/app.jar"]
