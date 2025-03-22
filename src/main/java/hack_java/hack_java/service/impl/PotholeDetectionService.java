@@ -6,8 +6,10 @@ import hack_java.hack_java.entity.AnomalyRequest;
 import hack_java.hack_java.entity.PotholeVerificationResult;
 import hack_java.hack_java.repository.LowLevelElasticsearchRepository;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -17,6 +19,7 @@ import java.util.Map;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class PotholeDetectionService {
 
     private static final Logger logger = LoggerFactory.getLogger(PotholeDetectionService.class);
@@ -108,25 +111,28 @@ public class PotholeDetectionService {
             List<String> ids = new ArrayList<>();
 
             for (JsonNode data : dataList) {
-                if("delhi".equalsIgnoreCase(data.get("city").asText())){
+                if ("delhi".equalsIgnoreCase(data.get("city").asText())) {
                     delhiData.add(data);
                 } else if ("gurgaon".equalsIgnoreCase(data.get("city").asText())) {
                     gurgaonData.add(data);
                 } else if ("noida".equalsIgnoreCase(data.get("city").asText())) {
                     noidaData.add(data);
                 }
-                for(JsonNode delhi : delhiData){
-                    notificationService.sendSms(delhi.get("address").asText());
-                    ids.add(delhi.get("id").asText());
-                }
-                for(JsonNode noida : noidaData){
-                    notificationService.sendWhatsAppSms(noida.get("address").asText());
-                    ids.add(noida.get("id").asText());
-                }
-                for(JsonNode gurgaon : gurgaonData){
-                    notificationService.sendSms(gurgaon.get("address").asText());
-                    ids.add(gurgaon.get("id").asText());
-                }
+            }
+            for (JsonNode delhi : delhiData) {
+                notificationService.sendSms("SAS tower");
+                //notificationService.sendSms(delhi.get("address").asText());
+                ids.add(delhi.get("id").asText());
+            }
+            for (JsonNode noida : noidaData) {
+                //notificationService.sendWhatsAppSms(noida.get("address").asText());
+                notificationService.sendWhatsAppSms("SAS tower");
+                ids.add(noida.get("id").asText());
+            }
+            for (JsonNode gurgaon : gurgaonData) {
+                notificationService.sendSms("SAS tower");
+                //notificationService.sendSms(gurgaon.get("address").asText());
+                ids.add(gurgaon.get("id").asText());
             }
             updateNotifyStatus(ids);
         }
@@ -137,7 +143,9 @@ public class PotholeDetectionService {
         elasticsearchRepository.update(timestamp, ids);
     }
 
+    @Scheduled(cron = "0 */10 * * * *")
     public void getAndUpdate() throws IOException {
+        log.info("executed in every 1 min");
         long currentTime = System.currentTimeMillis();
         long calculatedTime = currentTime - (30L * 24 * 60 * 60 * 1000);
 
@@ -145,11 +153,15 @@ public class PotholeDetectionService {
 
         //get all the data past 30 days
         List<JsonNode> filteredData = elasticsearchRepository.getAll(calculatedTime);
+        log.info("get all the data on the basis of currentDate filteredData");
         for (JsonNode data : filteredData){
 
             //get the potholes within 50m distance
             List<JsonNode> nodes = elasticsearchRepository.getUpdatedList(data.get("location").get("lat").asDouble(), data.get("location").get("lon").asDouble(), calculatedTime);
-            finalList.addAll(nodes);
+            log.info("filter the data on the basis of currentDate, latitude = {} and longitude = {} and nodes", data.get("location").get("lat").asDouble(), data.get("location").get("lon").asDouble());
+            if(nodes.size() > 0) {
+                finalList.addAll(nodes);
+            }
         }
         processAndNotify(finalList);
     }

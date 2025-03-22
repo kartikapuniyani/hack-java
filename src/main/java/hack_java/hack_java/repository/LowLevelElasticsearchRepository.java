@@ -361,6 +361,7 @@ public class LowLevelElasticsearchRepository {
                     " \"gte\": " + timestamp + "\n" +
                     "}\n" +
                     "}\n" +
+                    "}\n" +
                     "}";
 
             // Create a low-level request
