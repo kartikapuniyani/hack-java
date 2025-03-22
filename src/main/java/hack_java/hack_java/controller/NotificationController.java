@@ -14,14 +14,14 @@ public class NotificationController {
     private final NotificationServiceImpl notificationService;
 
     @PostMapping("/send")
-    public ResponseEntity<String> sendSms(@RequestBody WhatsAppRequestDTO dto) {
-        String response = notificationService.sendSms(dto);
+    public ResponseEntity<String> sendSms(@RequestParam String address) {
+        String response = notificationService.sendSms(address);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping
-    public ResponseEntity<String> sendWhatsappSms(@RequestBody WhatsAppRequestDTO dto) {
-        String response = notificationService.sendWhatsAppSms(dto);
+    public ResponseEntity<String> sendWhatsappSms(@RequestParam String address) {
+        String response = notificationService.sendWhatsAppSms(address);
         return ResponseEntity.ok(response);
     }
 }

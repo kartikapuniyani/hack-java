@@ -12,4 +12,6 @@ public class WhatsAppRequestDTO {
     private double latitude;
 
     private double longitude;
+
+    private String address;
 }

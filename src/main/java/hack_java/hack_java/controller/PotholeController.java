@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+
 @RestController
 @RequestMapping("/api/potholes")
 public class PotholeController {
@@ -31,5 +33,11 @@ public class PotholeController {
     @GetMapping("/status")
     public ResponseEntity<String> checkServiceStatus() {
         return ResponseEntity.ok("Pothole detection service is running");
+    }
+
+    @GetMapping
+    public ResponseEntity get() throws IOException {
+        potholeDetectionService.getAndUpdate();
+        return ResponseEntity.ok().build();
     }
 }

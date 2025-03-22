@@ -1,5 +1,6 @@
 package hack_java.hack_java.repository;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import hack_java.hack_java.entity.AnomalyRequest;
 import org.apache.http.util.EntityUtils;
@@ -21,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Repository
 public class LowLevelElasticsearchRepository {
@@ -65,7 +67,7 @@ public class LowLevelElasticsearchRepository {
             // Store accuracy and altitude
             document.put("accuracy", request.getLocation().getAccuracy());
             document.put("altitude", request.getLocation().getAltitude());
-            document.put("city","gurgaon");
+            document.put("city", "gurgaon");
 
             // Store sensor data statistics
             Map<String, Object> sensorStats = calculateSensorStatistics(request);
@@ -345,5 +347,185 @@ public class LowLevelElasticsearchRepository {
         }
 
         return max - min;
+    }
+
+    public List<JsonNode> getAll(long timestamp) {
+
+        try {
+            // Create the full query JSON manually
+            String jsonQuery = "{\n" +
+                    " \"query\": {\n" +
+                    " \"range\": {\n" +
+                    " \"reportDate\": {\n" +
+                    " \"gte\": " + timestamp + "\n" +
+                    "}\n" +
+                    "}\n" +
+                    "}";
+
+            // Create a low-level request
+            Request request = new Request("GET", "/" + potholeIndex + "/_search");
+            request.setJsonEntity(jsonQuery);
+
+            logger.debug("Sending geo_distance query: {}", jsonQuery);
+
+            // Execute the request using low-level client
+            Response response = getLowLevelClient().performRequest(request);
+
+            // Parse the response
+            String responseBody = EntityUtils.toString(response.getEntity());
+            JsonNode responseNode = objectMapper.readTree(responseBody);
+
+            logger.debug("Received response: {}", responseBody);
+
+            // Extract hits
+            JsonNode hitsNode = responseNode.path("hits").path("hits");
+
+            // Process results
+            List<JsonNode> results = new ArrayList<>();
+            for (JsonNode hit : hitsNode) {
+                results.add(hit.path("_source"));
+            }
+            return results;
+            // Extract hits
+//            Map<String, Object> hits = (Map<String, Object>) responseMap.get("hits");
+//            List<Map<String, Object>> hitsList = (List<Map<String, Object>>) hits.get("hits");
+
+//            // Process results
+//            List<Map<String, Object>> results = new ArrayList<>();
+//            for (Map<String, Object> hit : hitsList) {
+//                results.add((Map<String, Object>) hit.get("_source"));
+//            }
+//            return results;
+
+        } catch (IOException e) {
+            logger.error("Error while getting potholes", e);
+            throw new RuntimeException("Failed to get potholes", e);
+        }
+    }
+
+    public List<JsonNode> getUpdatedList(double latitude, double longitude, long timestamp) {
+        try {
+        // Create the full query JSON manually
+        String jsonQuery = "{\n" +
+                " \"query\": {\n" +
+                "   \"bool\": {\n" +
+                "     \"must\": [\n" +
+                "       {\n" +
+                "         \"geo_distance\": {\n" +
+                "           \"distance\": \"50m\",\n" +
+                "           \"location\": {\n" +
+                "             \"lat\": " + latitude + ",\n" +
+                "             \"lon\": " + longitude + "\n" +
+                "           }\n" +
+                "         }\n" +
+                "       },\n" +
+                "       {\n" +
+                "         \"range\": {\n" +
+                "           \"reportDate\": {\n" +
+                "             \"gte\": " + timestamp + "\n" +
+                "           }\n" +
+                "         }\n" +
+                "       }\n" +
+                "     ]\n" +
+                "   }\n" +
+                " }\n" +
+                "}";
+
+            // Create a low-level request
+            Request request = new Request("GET", "/" + potholeIndex + "/_search");
+            request.setJsonEntity(jsonQuery);
+
+            logger.debug("Sending geo_distance query: {}", jsonQuery);
+
+            // Execute the request using low-level client
+            Response response = getLowLevelClient().performRequest(request);
+
+            // Parse the response
+            String responseBody = EntityUtils.toString(response.getEntity());
+            JsonNode responseNode = objectMapper.readTree(responseBody);
+
+            logger.debug("Received response: {}", responseBody);
+
+            // Extract hits
+            JsonNode hitsNode = responseNode.path("hits").path("hits");
+
+            // Process results
+            List<JsonNode> results = new ArrayList<>();
+            for (JsonNode hit : hitsNode) {
+                results.add(hit.path("_source"));
+            }
+            return results;
+
+            // Extract hits
+//            Map<String, Object> hits = (Map<String, Object>) responseMap.get("hits");
+//            List<Map<String, Object>> hitsList = (List<Map<String, Object>>) hits.get("hits");
+
+            // Process results
+//            List<Map<String, Object>> results = new ArrayList<>();
+//            for (Map<String, Object> hit : hitsList) {
+//                results.add((Map<String, Object>) hit.get("_source"));
+//            }
+//            return results;
+
+        } catch (IOException e) {
+            logger.error("Error while getting potholes", e);
+            throw new RuntimeException("Failed to get potholes", e);
+        }
+    }
+
+    public void update(long timestamp, List<String> ids){
+        try {
+            //" \"gte\": " + timestamp + "\n" +
+            String idArray = ids.stream()
+                    .map(id -> "\"" + id + "\"") // Wrap each ID in double quotes
+                    .collect(Collectors.joining(", "));
+
+            // Create the full query JSON manually
+            String jsonQuery = "{\n" +
+                    "  \"query\": {\n" +
+                    "    \"terms\": {\n" +
+                    "      \"_id\": [\n" + idArray +
+                    "      ]\n" +
+                    "    }\n" +
+                    "  },\n" +
+                    "  \"script\": {\n" +
+                    "    \"source\": \"ctx._source.reportDate = params.new_date\",\n" +
+                    "    \"params\": {\n" +
+                    "      \"new_date\": " + timestamp + "\n" +
+                    "    }\n" +
+                    "  }\n" +
+                    "}";
+
+            // Create a low-level request
+            Request request = new Request("POST", "/" + potholeIndex + "/_search");
+            request.setJsonEntity(jsonQuery);
+
+            logger.debug("Sending geo_distance query: {}", jsonQuery);
+
+            // Execute the request using low-level client
+            Response response = getLowLevelClient().performRequest(request);
+
+            // Parse the response
+            String responseBody = EntityUtils.toString(response.getEntity());
+            Map<String, Object> responseMap = objectMapper.readValue(responseBody, Map.class);
+
+            logger.debug("Received response: {}", responseBody);
+
+            // Extract hits
+            Map<String, Object> hits = (Map<String, Object>) responseMap.get("hits");
+            List<Map<String, Object>> hitsList = (List<Map<String, Object>>) hits.get("hits");
+
+            // Process results
+//            List<Map<String, Object>> results = new ArrayList<>();
+//            for (Map<String, Object> hit : hitsList) {
+//                results.add((Map<String, Object>) hit.get("_source"));
+//            }
+//
+//            return results;
+
+        } catch (IOException e) {
+            logger.error("Error searching for nearby potholes", e);
+            throw new RuntimeException("Failed to search for nearby potholes", e);
+        }
     }
 }

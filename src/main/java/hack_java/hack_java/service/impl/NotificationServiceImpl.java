@@ -9,6 +9,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.client.RestClient;
 
 import java.net.URLEncoder;
@@ -28,11 +29,11 @@ public class NotificationServiceImpl {
 
     private ApplicationConfig.PwdConfig config;
 
-    public String sendSms(WhatsAppRequestDTO dto) {
+    public String sendSms(String address) {
         String url = String.format(twilioConfig.getSmsUrl(), twilioConfig.getAccountSid());
 
 
-        String msg = "In this " + dto.getLatitude() + " " + dto.getLongitude() + "find the pot hole.";
+        String msg = "In this " + address + " find the pot hole.";
 
         // Encode data for x-www-form-urlencoded
         String requestBody = "To=" + URLEncoder.encode("+" + config.getNhsiToNumber(), StandardCharsets.UTF_8) +
@@ -52,9 +53,9 @@ public class NotificationServiceImpl {
                 .body(String.class);
     }
 
-    public String sendWhatsAppSms(WhatsAppRequestDTO request) {
+    public String sendWhatsAppSms(String address) {
 
-        String msg = "In this " + "location " + "find the pot hole.";
+        String msg = "In this " + address + " find the pot hole.";
         MultiValueMap<String, String> formData = new LinkedMultiValueMap<>();
         formData.add("v", "1.1");
         formData.add("method", "SendMessage");

@@ -1,17 +1,22 @@
 package hack_java.hack_java.service.impl;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import hack_java.hack_java.entity.AccelValue;
 import hack_java.hack_java.entity.AnomalyRequest;
 import hack_java.hack_java.entity.GyroValue;
 import hack_java.hack_java.entity.PotholeVerificationResult;
 import hack_java.hack_java.repository.LowLevelElasticsearchRepository;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.xcontent.XContentType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +46,8 @@ public class PotholeDetectionService {
 
     @Autowired
     private LowLevelElasticsearchRepository elasticsearchRepository;
+
+    private NotificationServiceImpl notificationService;
 
     /**
      * Main method to process incoming pothole reports and verify them
@@ -169,5 +176,59 @@ public class PotholeDetectionService {
         }
 
         return false;
+    }
+
+    public void processAndNotify(List<JsonNode> dataList) throws IOException {
+        if (dataList.size() > 2) {
+            List<JsonNode> delhiData = new ArrayList<>();
+            List<JsonNode> gurgaonData = new ArrayList<>();
+            List<JsonNode> noidaData = new ArrayList<>();
+            List<String> ids = new ArrayList<>();
+
+            for (JsonNode data : dataList) {
+                if("delhi".equalsIgnoreCase(data.get("city").asText())){
+                    delhiData.add(data);
+                } else if ("gurgaon".equalsIgnoreCase(data.get("city").asText())) {
+                    gurgaonData.add(data);
+                } else if ("noida".equalsIgnoreCase(data.get("city").asText())) {
+                    noidaData.add(data);
+                }
+                for(JsonNode delhi : delhiData){
+                    notificationService.sendSms(delhi.get("address").asText());
+                    ids.add(delhi.get("id").asText());
+                }
+                for(JsonNode noida : noidaData){
+                    notificationService.sendWhatsAppSms(noida.get("address").asText());
+                    ids.add(noida.get("id").asText());
+                }
+                for(JsonNode gurgaon : gurgaonData){
+                    notificationService.sendSms(gurgaon.get("address").asText());
+                    ids.add(gurgaon.get("id").asText());
+                }
+            }
+            updateNotifyStatus(ids);
+        }
+    }
+
+    private void updateNotifyStatus(List<String> ids) throws IOException {
+        long timestamp = System.currentTimeMillis();
+        elasticsearchRepository.update(timestamp, ids);
+    }
+
+    public void getAndUpdate() throws IOException {
+        long currentTime = System.currentTimeMillis();
+        long calculatedTime = currentTime - (30L * 24 * 60 * 60 * 1000);
+
+        List<JsonNode> finalList = new ArrayList<>();
+
+        //get all the data past 30 days
+        List<JsonNode> filteredData = elasticsearchRepository.getAll(calculatedTime);
+        for (JsonNode data : filteredData){
+
+            //get the potholes within 50m distance
+            List<JsonNode> nodes = elasticsearchRepository.getUpdatedList(data.get("location").get("lat").asDouble(), data.get("location").get("lon").asDouble(), calculatedTime);
+            finalList.addAll(nodes);
+        }
+        processAndNotify(finalList);
     }
 }
